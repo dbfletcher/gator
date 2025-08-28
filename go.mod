@@ -1,3 +1,3 @@
-module github.com/bootdotdev/gator
+module github.com/dbfletcher/gator
 
 go 1.23.0
