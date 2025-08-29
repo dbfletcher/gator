@@ -35,6 +35,70 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	fmt.Println("Feed created successfully:")
 	printFeed(feed)
+
+	// Automatically follow the feed after creating it
+	feedFollow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't follow new feed: %w", err)
+	}
+
+	fmt.Printf("Now following '%s' as '%s'\n", feedFollow.FeedName, feedFollow.UserName)
+
+	return nil
+}
+
+func handlerFollowFeed(s *state, cmd command) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <url>", cmd.Name)
+	}
+	url := cmd.Args[0]
+
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("you must be logged in to follow a feed: %w", err)
+	}
+
+	feed, err := s.db.GetFeedByURL(context.Background(), url)
+	if err != nil {
+		return fmt.Errorf("couldn't find feed with that url: %w", err)
+	}
+
+	feedFollow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't follow feed: %w", err)
+	}
+
+	fmt.Printf("Now following '%s' as '%s'\n", feedFollow.FeedName, feedFollow.UserName)
+	return nil
+}
+
+func handlerListFollowing(s *state, cmd command) error {
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("you must be logged in to see your followed feeds: %w", err)
+	}
+
+	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return fmt.Errorf("couldn't get followed feeds: %w", err)
+	}
+
+	fmt.Println("You are following:")
+	for _, follow := range feedFollows {
+		fmt.Printf("- %s\n", follow.FeedName)
+	}
 	return nil
 }
 
