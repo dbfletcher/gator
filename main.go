@@ -21,12 +21,12 @@ func main() {
 		log.Fatalf("error reading config: %v", err)
 	}
 
-	db, err := sql.Open("postgres", cfg.DBURL)
+	conn, err := sql.Open("postgres", cfg.DBURL)
 	if err != nil {
 		log.Fatalf("error connecting to db: %v", err)
 	}
-	defer db.Close()
-	dbQueries := database.New(db)
+	defer conn.Close()
+	dbQueries := database.New(conn)
 
 	programState := &state{
 		db:  dbQueries,
@@ -46,6 +46,7 @@ func main() {
 	cmds.register("follow", middlewareLoggedIn(handlerFollowFeed))
 	cmds.register("following", middlewareLoggedIn(handlerListFollowing))
 	cmds.register("unfollow", middlewareLoggedIn(handlerUnfollowFeed))
+	cmds.register("browse", middlewareLoggedIn(handlerBrowse))
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
